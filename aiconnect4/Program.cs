@@ -8,14 +8,29 @@ namespace aiconnect4
         public const int colSize = 7;
         public const char X = 'X';
         public const char O = 'O';
+        public static int GetInput()
+        {
+            int col;
+            while (!int.TryParse(Console.ReadLine(), out col)) Console.WriteLine("Try again");
+            return col;
+        }
     }
     public class Program
     {
         static void Main(string[] args)
         {
             GameController gc = new GameController();
+            bool playing = true;
             gc.SetupGame();
-            gc.Run();
+            while (playing) 
+            {
+                gc.Run();
+                Console.Write("Would you like to play again? (1|yes, 2|no)");
+                if (Global.GetInput() == 2) playing = false;
+                else gc.ResetGame();
+            }
+            Console.WriteLine("Player 1 score: " + gc.playerOne.score + 
+                " | Player 2 score: " + gc.playerTwo.score);
             Console.WriteLine("Exiting game...");
         }
     }
@@ -43,16 +58,16 @@ namespace aiconnect4
     }
     public class Grid
     {
-        public Node[,] gameGrid {get;}
+        public Node[,] gameGrid {get; set;}
         public Grid()
         {
-            gameGrid = resetGrid();
+            gameGrid = ReturnResetGrid();
         }
         public Grid(Node[,] grid)
         {
             this.gameGrid = grid;
         }
-        public static Node[,] resetGrid()
+        public Node[,] ReturnResetGrid()
         {
             Node[,] newGrid = new Node[Global.rowSize, Global.colSize];
             for (int r = 0; r < Global.rowSize; r++)
@@ -64,9 +79,70 @@ namespace aiconnect4
             }
             return newGrid;
         }
+        public void ResetGrid()
+        {
+            this.gameGrid = ReturnResetGrid();
+        }
         public bool CheckWin()
         {
             // TODO: Check if someone has won
+            for (int r = 0; r < Global.rowSize - 3; r++)
+            {
+                for (int c = 0; c < Global.colSize; c++)
+                {
+                    // TODO: Bound checking
+                    // if (r + 1 > Global.rowSize ||
+                    //     r + 2 > Global.rowSize ||
+                    //     r + 3 > Global.rowSize ||
+                    //     c + 1 > Global.colSize ||
+                    //     c + 2 > Global.colSize ||
+                    //     c + 3 > Global.colSize ||
+                    //     r - 3 < 0 ||
+                    //     c - 3 < 0) break;
+                    // Horizontal
+                    if (gameGrid[r,c].c == ' ') continue; // Don't check blanks
+                    if (gameGrid[r,c].c == gameGrid[r,c+1].c && 
+                        gameGrid[r,c].c == gameGrid[r,c+2].c && 
+                        gameGrid[r,c].c == gameGrid[r,c+3].c)
+                        {
+                            if (gameGrid[r,c].c == 'X') Console.WriteLine("Player 1 Wins!");
+                            else Console.WriteLine("Player 2 Wins!");
+                            Console.WriteLine("Horizontal");
+                            return true;
+                        }
+                    // Vertical
+                    if (gameGrid[r,c].c == gameGrid[r+1,c].c &&
+                        gameGrid[r,c].c == gameGrid[r+2,c].c &&
+                        gameGrid[r,c].c == gameGrid[r+3,c].c)
+                        {
+                            if (gameGrid[r,c].c == 'X') Console.WriteLine("Player 1 Wins!");
+                            else Console.WriteLine("Player 2 Wins!");
+                            Console.WriteLine("Vertical");
+                            return true;
+                        }
+                    if (r-1 < 0 || c-1 < 0) break;
+                    // Diagonal \
+                    if (gameGrid[r,c].c == gameGrid[r-1,c-1].c &&
+                        gameGrid[r,c].c == gameGrid[r-2,c-2].c &&
+                        gameGrid[r,c].c == gameGrid[r-3,c-3].c)
+                        {
+                            if (gameGrid[r,c].c == 'X') Console.WriteLine("Player 1 Wins!");
+                            else Console.WriteLine("Player 2 Wins!");
+                            Console.WriteLine("Diagonal\\");
+                            return true;
+                        }
+                    // Diagonal /
+                    if (gameGrid[r,c].c == gameGrid[r+1,c+1].c &&
+                        gameGrid[r,c].c == gameGrid[r+2,c+2].c &&
+                        gameGrid[r,c].c == gameGrid[r+3,c+3].c)
+                        {
+                            if (gameGrid[r,c].c == 'X') Console.WriteLine("Player 1 Wins!");
+                            else Console.WriteLine("Player 2 Wins!");
+                            Console.WriteLine("Horizontal/");
+                            return true;
+                        }
+                }
+            }
             return false;
         }
         public string toString()
@@ -163,7 +239,7 @@ namespace aiconnect4
         bool GetPlayerFirst()
         {
             int choice;
-            Console.WriteLine("Please say who goes first (1, 2)");
+            Console.Write("Please say who goes first (1, 2)");
             while (!int.TryParse(Console.ReadLine(), out choice)) Console.WriteLine("Try again");
             if (choice == 1)
             {
@@ -181,10 +257,43 @@ namespace aiconnect4
             #region Game Loop
                 while (!win)
                 {
-                    PlayerMoves();
-                    win = gameGrid.CheckWin();
+                    // PlayerMoves(); // Fix & should be separate
+                    if (playerFirst) 
+                    { 
+                        this.PlayerOneMove(); 
+                        if (win = gameGrid.CheckWin()) 
+                        {
+                            this.playerOne.Win();
+                            break;
+                        }
+                        this.PlayerTwoMove(); 
+                        if (win = gameGrid.CheckWin()) 
+                        {
+                            this.playerTwo.Win();
+                            break;
+                        }
+                    }
+                    else 
+                    { 
+                        this.PlayerTwoMove(); 
+                        if (win = gameGrid.CheckWin()) 
+                        {
+                            this.playerTwo.Win();
+                            break;
+                        }
+                        this.PlayerOneMove(); 
+                        if (win = gameGrid.CheckWin()) 
+                        {
+                            this.playerOne.Win();
+                            break;
+                        }
+                    }
                 }
             #endregion
+        }
+        public void ResetGame()
+        {
+            this.gameGrid.ResetGrid();
         }
         public void PlayerMoves()
         {
@@ -226,18 +335,15 @@ namespace aiconnect4
             // TODO: Should have a break condition (-1 || q)
             while (inRange)
             {
-                col = GetInput();
+                col = Global.GetInput();
                 if (col >= Global.colSize || col < 0) Console.WriteLine("Please choose a number in the range of [0-6]");
                 else inRange = false;
             }
             return col;
         }
-
-        public int GetInput()
+        public void Win()
         {
-            int col;
-            while (!int.TryParse(Console.ReadLine(), out col)) Console.WriteLine("Try again");
-            return col;
+            this.score++;
         }
     }
     public class AI : Player
