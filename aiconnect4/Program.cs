@@ -166,8 +166,9 @@ namespace aiconnect4
         /// <param name="col">Column to play in</param>
         /// <param name="playerFirst">[true = playerOne first] | [false = playerTwo first]</param>
         /// <param name="playerNumber">[1 = playerOne] | [2 = playerTwo]</param>
-        public void Play(int c, bool playerFirst, int playerNumber)
+        public bool Play(int c, bool playerFirst, int playerNumber)
         {
+            if (gameGrid[0, c].c != ' ') return false; // Column full
             for (int r = Global.rowSize-1; r >= 0; r--)
             {
                 if (gameGrid[r, c].c == ' ')
@@ -186,6 +187,7 @@ namespace aiconnect4
                     break;
                 }
             }
+            return true;
         }
     }
     public class GameController
@@ -295,19 +297,16 @@ namespace aiconnect4
         {
             this.gameGrid.ResetGrid();
         }
-        public void PlayerMoves()
-        {
-            if (playerFirst) { this.PlayerOneMove(); this.PlayerTwoMove(); }
-            else { this.PlayerTwoMove(); this.PlayerOneMove(); }
-        }
         void PlayerOneMove()
         {
-            this.gameGrid.Play(playerOne.Move(), this.playerFirst, 1);
+            while(!this.gameGrid.Play(playerOne.Move(), this.playerFirst, 1))
+                Console.WriteLine("Please choose another column");
             Console.Write(gameGrid.toString());
         }
         void PlayerTwoMove()
         {
-            this.gameGrid.Play(playerTwo.Move(), this.playerFirst, 2);
+            while(!this.gameGrid.Play(playerTwo.Move(), this.playerFirst, 2))
+                Console.WriteLine("Please choose another column");
             Console.Write(gameGrid.toString());
         }
     }
@@ -348,6 +347,7 @@ namespace aiconnect4
     }
     public class AI : Player
     {
+        Node[,] aiGameGrid {get; set;}
         public AI() : base()
         {
             
@@ -358,21 +358,12 @@ namespace aiconnect4
         }
         public override int Move()
         {
-            int chioce = 0; // TODO: AI Always chooses 0
-            return chioce;
+            // return MiniMax();
+            return 0;
         }
-    }
-    public class MiniMax
-    {
-        public int max {get; set;}
-        public int min {get; set;}
-        public MiniMax(int min, int max)
+        public int MiniMax(Node n, int depth, bool maximizingPlayer)
         {
-            this.min = min;
-            this.max = max;
-        }
-        public int miniMax(Node node, int depth, Player maximizingPlayer)
-        {
+
             return 0;
         }
     }
