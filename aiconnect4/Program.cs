@@ -8,6 +8,7 @@ namespace aiconnect4
         public const int colSize = 7;
         public const char X = 'X';
         public const char O = 'O';
+        public const int DEFAULT_DEPTH = 4;
         public static int GetInput()
         {
             int col;
@@ -34,18 +35,18 @@ namespace aiconnect4
             Console.WriteLine("Exiting game...");
         }
     }
-    public class Node
+    public class Slot
     {
         public int row {get; set;}
         public int col {get; set;}        
         public char c {get; set;}
-        public Node(int row, int col)
+        public Slot(int row, int col)
         {
             this.row = row;
             this.col = col;
             this.c = ' ';
         }
-        public Node(int row, int col, char c)
+        public Slot(int row, int col, char c)
         {
             this.row = row;
             this.col = col;
@@ -58,23 +59,23 @@ namespace aiconnect4
     }
     public class Grid
     {
-        public Node[,] gameGrid {get; set;}
+        public Slot[,] gameGrid {get; set;}
         public Grid()
         {
             gameGrid = ReturnResetGrid();
         }
-        public Grid(Node[,] grid)
+        public Grid(Slot[,] grid)
         {
             this.gameGrid = grid;
         }
-        public Node[,] ReturnResetGrid()
+        public Slot[,] ReturnResetGrid()
         {
-            Node[,] newGrid = new Node[Global.rowSize, Global.colSize];
+            Slot[,] newGrid = new Slot[Global.rowSize, Global.colSize];
             for (int r = 0; r < Global.rowSize; r++)
             {
                 for (int c = 0; c < Global.colSize; c++)
                 {
-                    newGrid[r, c] = new Node(r, c);
+                    newGrid[r, c] = new Slot(r, c);
                 }
             }
             return newGrid;
@@ -347,7 +348,7 @@ namespace aiconnect4
     }
     public class AI : Player
     {
-        Node[,] aiGameGrid {get; set;}
+        Slot[,] aiGameGrid {get; set;}
         public AI() : base()
         {
             
@@ -358,13 +359,111 @@ namespace aiconnect4
         }
         public override int Move()
         {
-            // return MiniMax();
+            /*
+                if (this.char = X (first))
+                    max()
+                else // second
+                    min()
+            */
+            
             return 0;
         }
-        public int MiniMax(Node n, int depth, bool maximizingPlayer)
+        
+    }
+    public class MiniMax
+    {
+        public int maxDepth;
+        public MiniMax()
         {
-
+            this.maxDepth = Global.DEFAULT_DEPTH;
+        }
+        public MiniMax(int depth)
+        {
+            this.maxDepth = depth;
+        }
+        // a-b pruning
+        /*
+            a: 
+                if the current max is greater than the successors min value, 
+                dont explore that min tree anymore
+        */
+        /*
+            b:
+                if the current minimum is less than the successors maximum 
+                value, dont look down that max tree anymore
+        */
+        public Move MaxMove(GamePosition game)
+        {
+            bool gameOver = false;
+            int bestMove = 0;
+            if (gameOver)
+            {
+                return EvaluateGameState(game);
+            }
+            else
+            {
+                Move[] moves = GenerateMoves(game); // list of cols?
+                foreach (Move m in moves)
+                {
+                    m = MinMove(ApplyMove(game)); // test the move on the board and check
+                    if (Value(m) > Value(bestMove))
+                    {
+                        bestMove = m;
+                    }
+                }
+                return Move(bestMove);
+            }
+        }
+        public Move MinMove(GamePosition game) // is this the board?
+        {
+            bool gameOver = false;
+            int bestMove = 0;
+            if (gameOver)
+            {
+                return EvaluateGameState(game);
+            }
+            else
+            {
+                Move[] moves = GenerateMoves(game); // list of cols?
+                foreach (Move m in moves)
+                {
+                    m = MaxMove(ApplyMove(game)); // test the move on the board and check
+                    if (Value(m) > Value(bestMove))
+                    {
+                        bestMove = m;
+                    }
+                }
+                return bestMove;
+            }
+        }
+        public void GenerateMoves() // based on what?
+        {
+            
+        }
+        public int EvaluateGameState(GamePosition game)
+        {
             return 0;
         }
+        int Value(int col)
+        {
+            // value of col?
+            return 0;
+        }
+        GamePosition ApplyMove(GamePosition gp)
+        {
+            return new GamePosition();
+        }
+    }
+    public class Move
+    {
+        int value;
+        public Move(int value)
+        {
+            this.value = value;
+        }
+    }
+    public class GamePosition
+    {
+
     }
 }
