@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 
-namespace aiconnect4
+namespace Connect4
 {
     /// <summary>
     /// Global variables for the entire game. Easy to set
@@ -155,6 +156,10 @@ namespace aiconnect4
         {
             gameGrid = ReturnResetGrid();
         }
+        public Grid(Slot[,] gameGrid)
+        {
+            this.gameGrid = gameGrid;
+        }
         /// <summary>
         /// Constructor
         /// </summary>
@@ -256,28 +261,33 @@ namespace aiconnect4
             }
             return false;
         }
+        /* // REVIEW: Depricated
         /// <summary>
         /// Evaluates an array of slots
         /// </summary>
         /// <param name="slots">4 slots</param>
         /// <param name="c">Character to evaluate in the slots</param>
         /// <returns>Value of the slots</returns>
-        public int EvaluateSlot(Slot[] slots, char c)
+        public int EvaluateSlot(Slot[] slots, char c) // NOTE: This isn't right
         {
             int pos = 0;
             int neg = 0;
             for (int i = 0; i < Global.winNum; i++)
             {
-                if (slots[i].c == c)
-                {
-                    pos++;
-                }
-                else
-                {
-                    if (!(slots[i].c == ' ')) neg++;
-                }
+                if (slots[i].c == c) pos++;
+                else if (!(slots[i].c == ' ')) neg++;
             }
             return (pos * pos) - (neg * neg);
+        }
+        */
+        /// <summary>
+        /// Evaluates the entire game board looking for patters: X-X-, XX--, XXX-, X0XX, etc.
+        /// </summary>
+        /// <returns>Value of the gameboard</returns>
+        public int EvaluateMove()
+        {
+            // TODO: How to evaluate the board? Should check for how many quad, triples, doubles, singles of each in board?
+            return 0; // Will return the value of the board
         }
         /// <summary>
         /// Prints the grid as a nice table.
@@ -327,14 +337,16 @@ namespace aiconnect4
             }
             return true;
         }
-        /// <summary>
-        /// This will evaluate the board for the possible winner
-        /// </summary>
-        /// <returns>[0|draw] [1|playerOne] [2|playerTwo]</returns>
-        public int EvaluateBoard() // this is going to be fucking gross
+        public ArrayList GetMoves(bool playerFirst, int playerNumber)
         {
-
-            return 0; // draw
+            ArrayList moves = new ArrayList();
+            // Generate gameboards with separate moves
+            for (int c = 0; c < Global.colSize-1; c++)
+            {
+                Grid tempGrid = new Grid(this.gameGrid);
+                if (tempGrid.Play(c, playerFirst, playerNumber)) moves.Add(tempGrid);
+            }
+            return moves;
         }
     }
     /// <summary>
@@ -564,7 +576,7 @@ namespace aiconnect4
             Console.Write("Please select a column [0-6]: ");
             bool inRange = true;
             int col = -1;
-            // TODO: Should have a break condition (-1 || q)
+            // REVIEW: Should have a break condition (-1 || q)
             while (inRange)
             {
                 col = Global.GetNumberInput();
@@ -597,9 +609,41 @@ namespace aiconnect4
             // return MiniMax();
             return 0;
         }
-        public int MiniMax(Slot n, int depth, bool maximizingPlayer)
+        int max(int a, int b) // Glboal?
         {
-            return 0;
+            if (a > b) return a;
+            return b;
+        }
+        int min(int a, int b) // Global?
+        {
+            if (a < b) return a;
+            return b;
+        }
+        public int MiniMax(Grid node, int depth, bool maximizingPlayer) // start true
+        {
+            int bestValue = 0;
+            if (depth == 0)
+                return node.EvaluateMove();
+            if (maximizingPlayer)
+            {
+                bestValue = -int.MaxValue;
+                foreach (Grid child in node.GetMoves(true, 1)) // REVIEW: Double Check this
+                {
+                    int tempV = MiniMax(child, depth - 1, false);
+                    bestValue = max(bestValue, tempV);
+                }
+                return bestValue;
+            }
+            else
+            {
+                bestValue = int.MaxValue;
+                foreach (Grid child in node.GetMoves(true, 2)) // REVIEW: Double Check this
+                {
+                    int tempV = MiniMax(child, depth - 1, true);
+                    bestValue = min(bestValue, tempV);
+                }
+                return bestValue;
+            }
         }
     }
 }
