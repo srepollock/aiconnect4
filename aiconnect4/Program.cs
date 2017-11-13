@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 
 namespace aiconnect4
 {
@@ -23,6 +24,10 @@ namespace aiconnect4
         /// Player 2 character
         /// </summary>
         public const char O = 'O';
+        /// <summary>
+        /// Global win
+        /// </summary>
+        public const int winNum = 4;
         /// <summary>
         /// Get input from user function
         /// </summary>
@@ -104,6 +109,27 @@ namespace aiconnect4
             this.c = c;
         }
         /// <summary>
+        /// Gets adjacent slots from the game grid.
+        /// </summary>
+        /// <param name="gameGrid">Current Game Grid</param>
+        /// <returns>List of adjacent Slots</returns>
+        public ArrayList GetAdjacentSlots(Grid curGrid)
+        {
+            ArrayList slots = new ArrayList();
+            for (int r = this.row - 1; r < this.row + 1; r++)
+            {
+                if (r < 0 || r >= Global.rowSize) 
+                {
+                    continue;
+                }
+                for (int c = this.col - 1; c < this.col + 1; c++)
+                {
+                    if (!(c < 0 || c >= Global.colSize)) slots.Add(curGrid.gameGrid[r,c]);
+                }
+            }
+            return slots;
+        }
+        /// <summary>
         /// Prints the slots character
         /// </summary>
         /// <returns>Character as string</returns>
@@ -133,9 +159,13 @@ namespace aiconnect4
         /// Constructor
         /// </summary>
         /// <param name="grid">New world grid</param>
-        public Grid(Slot[,] grid)
+        /// <param name="row">Row to insert at</param>
+        /// <param name="col">Col to insert at</param>
+        /// <param name="c">Character to insert</param>
+        public Grid(Slot[,] grid, int row, int col, char c)
         {
             this.gameGrid = grid;
+            this.gameGrid[row,col].c = c;
         }
         /// <summary>
         /// Returns an empty grid. Called on reset
@@ -227,6 +257,29 @@ namespace aiconnect4
             return false;
         }
         /// <summary>
+        /// Evaluates an array of slots
+        /// </summary>
+        /// <param name="slots">4 slots</param>
+        /// <param name="c">Character to evaluate in the slots</param>
+        /// <returns>Value of the slots</returns>
+        public int EvaluateSlot(Slot[] slots, char c)
+        {
+            int pos = 0;
+            int neg = 0;
+            for (int i = 0; i < Global.winNum; i++)
+            {
+                if (slots[i].c == c)
+                {
+                    pos++;
+                }
+                else
+                {
+                    if (!(slots[i].c == ' ')) neg++;
+                }
+            }
+            return (pos * pos) - (neg * neg);
+        }
+        /// <summary>
         /// Prints the grid as a nice table.
         /// </summary>
         /// <returns>Table of the grid</returns>
@@ -278,9 +331,9 @@ namespace aiconnect4
         /// This will evaluate the board for the possible winner
         /// </summary>
         /// <returns>[0|draw] [1|playerOne] [2|playerTwo]</returns>
-        public int EvaluateBoard()
+        public int EvaluateBoard() // this is going to be fucking gross
         {
-            
+
             return 0; // draw
         }
     }
@@ -530,14 +583,14 @@ namespace aiconnect4
     }
     public class AI : Player
     {
-        Slot[,] aiGameGrid {get; set;}
+        public Grid aiGameGrid {get; set;}
         public AI() : base()
         {
-            
+            this.aiGameGrid = new Grid();
         }
-        public AI(string name, int score) : base(name, score)
+        public AI(string name, int score, Grid grid) : base(name, score)
         {
-
+            this.aiGameGrid = grid;
         }
         public override int Move()
         {
@@ -546,7 +599,6 @@ namespace aiconnect4
         }
         public int MiniMax(Slot n, int depth, bool maximizingPlayer)
         {
-
             return 0;
         }
     }
