@@ -10,9 +10,9 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/aiconnect4/bin/Debug/netcoreapp2.0/aiconnect4.dll",
+            "program": "${workspaceFolder}/connect4/bin/Debug/netcoreapp2.0/connect4.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/aiconnect4",
+            "cwd": "${workspaceFolder}/connect4",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
             "externalConsole": true,
             "stopAtEntry": false,

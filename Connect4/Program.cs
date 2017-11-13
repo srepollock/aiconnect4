@@ -26,9 +26,31 @@ namespace Connect4
         /// </summary>
         public const char O = 'O';
         /// <summary>
-        /// Global win
+        /// Winning number
         /// </summary>
         public const int winNum = 4;
+        /// <summary>
+        /// Return maximum of the two
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns>A > B</returns>
+        public static int max(int a, int b)
+        {
+            if (a > b) return a;
+            return b;
+        }
+        /// <summary>
+        /// Return minimum of the two
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns>A < B</returns>
+        public static int min(int a, int b)
+        {
+            if (a < b) return a;
+            return b;
+        }
         /// <summary>
         /// Get input from user function
         /// </summary>
@@ -201,7 +223,6 @@ namespace Connect4
         /// <returns>True or false respectively</returns>
         public bool CheckWin()
         {
-            // TODO: Check if someone has won
             for (int r = 0; r < Global.rowSize - 3; r++)
             {
                 for (int c = 0; c < Global.colSize; c++)
@@ -261,14 +282,14 @@ namespace Connect4
             }
             return false;
         }
-        /* // REVIEW: Depricated
+        // REVIEW: Depricated(?)
         /// <summary>
         /// Evaluates an array of slots
         /// </summary>
         /// <param name="slots">4 slots</param>
         /// <param name="c">Character to evaluate in the slots</param>
         /// <returns>Value of the slots</returns>
-        public int EvaluateSlot(Slot[] slots, char c) // NOTE: This isn't right
+        public int EvaluateSlot(Slot[] slots, char c) // NOTE: This could be used for our lines
         {
             int pos = 0;
             int neg = 0;
@@ -277,17 +298,62 @@ namespace Connect4
                 if (slots[i].c == c) pos++;
                 else if (!(slots[i].c == ' ')) neg++;
             }
-            return (pos * pos) - (neg * neg);
+            int value = (pos * pos) - (neg * neg);
+            if (value == (1*1)-(3*3)) return value - 1000;
+            if (value == 4*4) return value + 1000;
+            return value;
         }
-        */
         /// <summary>
         /// Evaluates the entire game board looking for patters: X-X-, XX--, XXX-, X0XX, etc.
         /// </summary>
         /// <returns>Value of the gameboard</returns>
-        public int EvaluateMove()
+        public int EvaluateMove(bool playerFirst, bool maximizingPlayer)
         {
             // TODO: How to evaluate the board? Should check for how many quad, triples, doubles, singles of each in board?
-            return 0; // Will return the value of the board
+            char pc;
+            if (maximizingPlayer) pc = Global.X;
+            else pc = Global.O;
+            int value = 0;
+            for (int r = 0; r < Global.rowSize-3; r++)
+            {
+                for (int c = 0; c < Global.colSize; c++)
+                {
+                    // Vertical
+                    value += EvaluateSlot(new Slot[4]
+                        {
+                            this.gameGrid[r,c],
+                            this.gameGrid[r+1,c],
+                            this.gameGrid[r+2,c],
+                            this.gameGrid[r+3,c]
+                        }, pc);
+                    // Horizontal
+                    value += EvaluateSlot(new Slot[4]
+                        {
+                            this.gameGrid[r,c],
+                            this.gameGrid[r,c+1],
+                            this.gameGrid[r,c+2],
+                            this.gameGrid[r,c+3]
+                        }, pc);
+                    // Diagonal \
+                    value += EvaluateSlot(new Slot[4]
+                        {
+                            this.gameGrid[r,c],
+                            this.gameGrid[r+1,c+1],
+                            this.gameGrid[r+2,c+2],
+                            this.gameGrid[r+3,c+3]
+                        }, pc);
+                    if (r-1 < 0 || c-1 < 0) break;
+                    // Diagonal /
+                    value += EvaluateSlot(new Slot[4]
+                        {
+                            this.gameGrid[r,c],
+                            this.gameGrid[r-1,c-1],
+                            this.gameGrid[r-2,c-2],
+                            this.gameGrid[r-3,c-3]
+                        }, pc);
+                }
+            }
+            return value; // Will return the value of the board
         }
         /// <summary>
         /// Prints the grid as a nice table.
@@ -337,6 +403,12 @@ namespace Connect4
             }
             return true;
         }
+        /// <summary>
+        /// Add a move to a temporary grid
+        /// </summary>
+        /// <param name="playerFirst">[true = playerOne first] | [false = playerTwo first]</param>
+        /// <param name="playerNumber">[1 = playerOne] | [2 = playerTwo]</param>
+        /// <returns>ArrayList of grids with different moves</returns>
         public ArrayList GetMoves(bool playerFirst, int playerNumber)
         {
             ArrayList moves = new ArrayList();
@@ -368,7 +440,7 @@ namespace Connect4
         /// Second player
         /// </summary>
         /// <returns>Player two</returns>
-        public Player playerTwo {get; set;}
+        public AI playerTwo {get; set;}
         /// <summary>
         /// First or second player starts
         /// </summary>
@@ -386,7 +458,7 @@ namespace Connect4
         {
             this.gameGrid = new Grid();
             this.playerOne = new Player();
-            this.playerTwo = new Player();
+            this.playerTwo = new AI();
             this.playerFirst = false;
             this.vsAI = false;
         }
@@ -398,7 +470,7 @@ namespace Connect4
         /// <param name="p2">Player two</param>
         /// <param name="playerFirst">Player first true||false</param>
         /// <param name="vsAI">VS AI true||false</param>
-        public GameController(Grid grid, Player p1, Player p2, bool playerFirst, bool vsAI)
+        public GameController(Grid grid, Player p1, AI p2, bool playerFirst, bool vsAI)
         {
             this.gameGrid = grid;
             this.playerOne = p1;
@@ -441,8 +513,13 @@ namespace Connect4
         /// </summary>
         void SetAI()
         {
-            this.playerTwo = new AI();
-            this.playerTwo.name = "Some AI";
+            this.vsAI = true;
+            AI tempPlayer = new AI();
+            tempPlayer.name = "AI";
+            tempPlayer.aiGameGrid = this.gameGrid; // TODO: This needs to be set each time
+            tempPlayer.playerFirst = this.playerFirst;
+            Console.Write("AI Depth: " );
+            tempPlayer.depth = Global.GetNumberInput();
         }
         /// <summary>
         /// Get who is playing first from user
@@ -527,6 +604,12 @@ namespace Connect4
         /// </summary>
         void PlayerTwoMove()
         {
+            if (vsAI) 
+            {
+                AI tempAi = (AI)this.playerTwo;
+                tempAi.aiGameGrid = this.gameGrid;
+                this.playerTwo = tempAi;
+            }
             while(!this.gameGrid.Play(playerTwo.Move(), this.playerFirst, 2))
                 Console.WriteLine("Please choose another column");
             Console.Write(gameGrid.toString());
@@ -596,6 +679,8 @@ namespace Connect4
     public class AI : Player
     {
         public Grid aiGameGrid {get; set;}
+        public int depth {get; set;}
+        public bool playerFirst;
         public AI() : base()
         {
             this.aiGameGrid = new Grid();
@@ -606,31 +691,20 @@ namespace Connect4
         }
         public override int Move()
         {
-            // return MiniMax();
-            return 0;
+            return MiniMax(this.aiGameGrid, this.depth, playerFirst, true);
         }
-        int max(int a, int b) // Glboal?
-        {
-            if (a > b) return a;
-            return b;
-        }
-        int min(int a, int b) // Global?
-        {
-            if (a < b) return a;
-            return b;
-        }
-        public int MiniMax(Grid node, int depth, bool maximizingPlayer) // start true
+        public int MiniMax(Grid node, int depth, bool playerFirst, bool maximizingPlayer) // start true
         {
             int bestValue = 0;
             if (depth == 0)
-                return node.EvaluateMove();
+                return node.EvaluateMove(playerFirst, maximizingPlayer);
             if (maximizingPlayer)
             {
                 bestValue = -int.MaxValue;
                 foreach (Grid child in node.GetMoves(true, 1)) // REVIEW: Double Check this
                 {
-                    int tempV = MiniMax(child, depth - 1, false);
-                    bestValue = max(bestValue, tempV);
+                    int tempV = MiniMax(child, depth - 1, playerFirst, false);
+                    bestValue = Global.max(bestValue, tempV);
                 }
                 return bestValue;
             }
@@ -639,8 +713,8 @@ namespace Connect4
                 bestValue = int.MaxValue;
                 foreach (Grid child in node.GetMoves(true, 2)) // REVIEW: Double Check this
                 {
-                    int tempV = MiniMax(child, depth - 1, true);
-                    bestValue = min(bestValue, tempV);
+                    int tempV = MiniMax(child, depth - 1, playerFirst, true);
+                    bestValue = Global.min(bestValue, tempV);
                 }
                 return bestValue;
             }
