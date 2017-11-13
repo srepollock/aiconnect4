@@ -40,6 +40,15 @@ namespace Connect4
             if (a > b) return a;
             return b;
         }
+        public static bool maxBool(ref int a, int b)
+        {
+            if (a > b)
+            {
+                return true;
+            }
+            a = b;
+            return false;
+        }
         /// <summary>
         /// Return minimum of the two
         /// </summary>
@@ -382,21 +391,21 @@ namespace Connect4
         /// <param name="playerNumber">[1 = playerOne] | [2 = playerTwo]</param>
         public bool Play(int c, bool playerFirst, int playerNumber)
         {
-            if (gameGrid[0, c].c != ' ') return false; // Column full
+            if (this.gameGrid[0, c].c != ' ') return false; // Column full
             for (int r = Global.rowSize-1; r >= 0; r--)
             {
-                if (gameGrid[r, c].c == ' ')
+                if (this.gameGrid[r, c].c == ' ')
                 {
                     // Redundant. Player can just get X||O as a char to play
                     if (playerNumber == 1)
                     {
-                        if (playerFirst) gameGrid[r, c].c = Global.X;
-                        else gameGrid[r, c].c = Global.O;
+                        if (playerFirst) this.gameGrid[r, c].c = Global.X;
+                        else this.gameGrid[r, c].c = Global.O;
                     } 
                     else 
                     {
-                        if (playerFirst) gameGrid[r, c].c = Global.O; 
-                        else gameGrid[r, c].c = Global.X;
+                        if (playerFirst) this.gameGrid[r, c].c = Global.O; 
+                        else this.gameGrid[r, c].c = Global.X;
                     }
                     break;
                 }
@@ -514,12 +523,12 @@ namespace Connect4
         void SetAI()
         {
             this.vsAI = true;
-            AI tempPlayer = new AI();
-            tempPlayer.name = "AI";
-            tempPlayer.aiGameGrid = this.gameGrid; // TODO: This needs to be set each time
-            tempPlayer.playerFirst = this.playerFirst;
+            this.playerTwo.name = "AI";
+            this.playerTwo.aiGameGrid = this.gameGrid; // TODO: This needs to be set each time
+            this.playerTwo.vsAI = this.vsAI;
+            this.playerTwo.playerFirst = this.playerFirst;
             Console.Write("AI Depth: " );
-            tempPlayer.depth = Global.GetNumberInput();
+            this.playerTwo.depth = Global.GetNumberInput();
         }
         /// <summary>
         /// Get who is playing first from user
@@ -654,7 +663,6 @@ namespace Connect4
         /// <returns>Column to play in</returns>
         public virtual int Move()
         {
-            // TODO: get the player input and send it to the grid
             Console.WriteLine(this.name + "'s Turn");
             Console.Write("Please select a column [0-6]: ");
             bool inRange = true;
@@ -680,7 +688,8 @@ namespace Connect4
     {
         public Grid aiGameGrid {get; set;}
         public int depth {get; set;}
-        public bool playerFirst;
+        public bool playerFirst {get; set;}
+        public bool vsAI {get; set;}
         public AI() : base()
         {
             this.aiGameGrid = new Grid();
@@ -691,8 +700,34 @@ namespace Connect4
         }
         public override int Move()
         {
-            return MiniMax(this.aiGameGrid, this.depth, playerFirst, true);
+            if (vsAI)
+            { // NOTE: AI move
+                // return MiniMax(this.aiGameGrid, this.depth, playerFirst, true); // BUG: Returning the bestValue of the function
+                int finalMove = -1;
+                int bestValue = int.MaxValue;
+                for (int c = 0; c < Global.colSize; c++)
+                    if (Global.maxBool(ref bestValue, MiniMax(this.aiGameGrid, this.depth, playerFirst, true))) finalMove = c; // DEBUG: This won't return the right column?
+                return finalMove;
+            } 
+            else
+            { // NOTE: Player Move
+                // Should be able to call the default?
+                Console.WriteLine(this.name + "'s Turn");
+                Console.Write("Please select a column [0-6]: ");
+                bool inRange = true;
+                int col = -1;
+                // REVIEW: Should have a break condition (-1 || q)
+                while (inRange)
+                {
+                    col = Global.GetNumberInput();
+                    if (col >= Global.colSize || col < 0) Console.WriteLine("Please choose a number in the range of [0-6]");
+                    else inRange = false;
+                }
+                return col;
+            }
         }
+        // TODO: Should return the column to pick in
+        // REVIEW: How to get the column to move into?
         public int MiniMax(Grid node, int depth, bool playerFirst, bool maximizingPlayer) // start true
         {
             int bestValue = 0;
@@ -701,7 +736,7 @@ namespace Connect4
             if (maximizingPlayer)
             {
                 bestValue = -int.MaxValue;
-                foreach (Grid child in node.GetMoves(true, 1)) // REVIEW: Double Check this
+                foreach (Grid child in node.GetMoves(playerFirst, 1))
                 {
                     int tempV = MiniMax(child, depth - 1, playerFirst, false);
                     bestValue = Global.max(bestValue, tempV);
@@ -711,7 +746,7 @@ namespace Connect4
             else
             {
                 bestValue = int.MaxValue;
-                foreach (Grid child in node.GetMoves(true, 2)) // REVIEW: Double Check this
+                foreach (Grid child in node.GetMoves(playerFirst, 2))
                 {
                     int tempV = MiniMax(child, depth - 1, playerFirst, true);
                     bestValue = Global.min(bestValue, tempV);
