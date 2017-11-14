@@ -239,7 +239,7 @@ namespace Connect4
                         if (c - 3 >= 0 &&
                             player == positions[r + 1, c - 1].value && // look up & left
                             player == positions[r + 2, c - 2].value &&
-                            player == positions[r + 3, - 3].value)
+                            player == positions[r + 3, c - 3].value)
                         {
                             if (player == p.character) return true;
                             else return false;
