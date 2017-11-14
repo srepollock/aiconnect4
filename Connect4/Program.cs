@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Connect4
 {
@@ -22,7 +24,6 @@ namespace Connect4
             {
                 return true;
             }
-            a = b;
             return false;
         }
         public static int min(int a, int b)
@@ -92,7 +93,7 @@ namespace Connect4
             }
             return col;
         }
-        public virtual bool Win()
+        public bool Win()
         {
             this.score++;
             return true;
@@ -101,6 +102,7 @@ namespace Connect4
     public class AI : Player
     {
         public int depth { get; set; } = 0;
+        public Board aiBoard { get; set; }
         public AI() : base()
         {
 
@@ -111,36 +113,54 @@ namespace Connect4
         }
         public override int Move()
         {
-            // TODO: Minimax here
-            return base.Move(); // Not like this
+            return base.Move();
         }
-        //int Minimax(Board node, int depth, bool maximizingPlayer)
-        //{
-        //    int bestValue = 0;
-        //    if (depth == 0)
-        //        return node.EvaluateBoard(this);
-        //    if (maximizingPlayer)
-        //    {
-        //        bestValue = -int.MaxValue;
-        //        foreach (Board child in node.GetChildren()) // TODO: Does AI need to know both?
-        //        {
-        //            int tempV = Minimax(child, depth - 1, false);
-        //            bestValue = Global.max(bestValue, tempV);
-        //        }
-        //        return bestValue;
-        //    }
-        //    else
-        //    {
-        //        bestValue = int.MaxValue;
-        //        foreach (Board child in node.GetChildren())
-        //        {
-        //            int tempV = Minimax(child, depth - 1, true);
-        //            bestValue = Global.min(bestValue, tempV);
-        //        }
-        //        return bestValue;
-        //    }
-        //}
+        public int AIMove()
+        {
+            int finalMove = 0;
+            int bestValue = -int.MaxValue;
+            for (int c = 0; c < Global.colSize; c++)
+            {
+                int minimaxvalue = Minimax(this.aiBoard, this.depth, true);
+                if (bestValue != Math.Max(bestValue, minimaxvalue))
+                {
+                    bestValue = minimaxvalue;
+                    finalMove = c; // BUG: This always reuturns the last column
+                }
+            }
+            return finalMove;
+        }
+        int Minimax(Board node, int depth, bool maximizingPlayer)
+        {
+            int bestValue = 0;
+            if (depth == 0)
+                return node.EvaluateBoard(this);
+            if (maximizingPlayer)
+            {
+                bestValue = -int.MaxValue;
+                foreach (Board child in node.GetChildren(this.character)) // This is when the computer wants to move
+                {
+                    int tempV = Minimax(child, depth - 1, false);
+                    bestValue = Global.max(bestValue, tempV);
+                }
+                return bestValue;
+            }
+            else
+            {
+                char ch;
+                if (this.character == Global.X) ch = Global.O;
+                else ch = Global.X;
+                bestValue = int.MaxValue;
+                foreach (Board child in node.GetChildren(ch)) // This is when the player wants to move
+                {
+                    int tempV = Minimax(child, depth - 1, true);
+                    bestValue = Global.min(bestValue, tempV);
+                }
+                return bestValue;
+            }
+        }
     }
+    [Serializable]
     public class Position
     {
         public char value { get; set; } = ' ';
@@ -166,6 +186,7 @@ namespace Connect4
             return this.value.ToString();
         }
     }
+    [Serializable]
     public class Board
     {
         public Position[,] positions { get; set; }
@@ -181,61 +202,110 @@ namespace Connect4
         {
             this.positions = positions;
         }
-        public bool CheckWin(Player p) // TODO: Refactor to check on this player's character for their win
+        public bool CheckWin(Player p)
         {
             for (int r = 0; r < Global.rowSize - 3; r++)
             {
                 for (int c = 0; c < Global.colSize; c++)
                 {
-                    if (positions[r, c].value == ' ') continue; // Don't check blanks ????
-                    if (positions[r, c].value == positions[r, c + 1].value &&
-                        positions[r, c].value == positions[r, c + 2].value &&
-                        positions[r, c].value == positions[r, c + 3].value)
+                    char player = positions[r, c].value; // Currently checking
+                    if (player == ' ') continue; // Empty
+                    if (c + 3 < Global.colSize &&
+                        player == positions[r, c + 1].value && // look right
+                        player == positions[r, c + 2].value &&
+                        player == positions[r, c + 3].value)
                     {
-                        if (positions[r, c].value == 'X') Console.WriteLine("Player 1 Wins!");
-                        else Console.WriteLine("Player 2 Wins!");
-                        Console.WriteLine("Horizontal");
-                        return true;
+                        if (player == p.character) return true;
+                        else return false;
                     }
-                    // Vertical
-                    if (positions[r, c].value == positions[r + 1, c].value &&
-                        positions[r, c].value == positions[r + 2, c].value &&
-                        positions[r, c].value == positions[r + 3, c].value)
+                    if (r + 3 < Global.rowSize)
                     {
-                        if (positions[r, c].value == 'X') Console.WriteLine("Player 1 Wins!");
-                        else Console.WriteLine("Player 2 Wins!");
-                        Console.WriteLine("Vertical");
-                        return true;
-                    }
-                    if (r - 1 < 0 || c - 1 < 0) break;
-                    // Diagonal \
-                    if (positions[r, c].value == positions[r - 1, c - 1].value &&
-                        positions[r, c].value == positions[r - 2, c - 2].value &&
-                        positions[r, c].value == positions[r - 3, c - 3].value)
-                    {
-                        if (positions[r, c].value == 'X') Console.WriteLine("Player 1 Wins!");
-                        else Console.WriteLine("Player 2 Wins!");
-                        Console.WriteLine("Diagonal\\");
-                        return true;
-                    }
-                    // Diagonal /
-                    if (positions[r, c].value == positions[r + 1, c + 1].value &&
-                        positions[r, c].value == positions[r + 2, c + 2].value &&
-                        positions[r, c].value == positions[r + 3, c + 3].value)
-                    {
-                        if (positions[r, c].value == 'X') Console.WriteLine("Player 1 Wins!");
-                        else Console.WriteLine("Player 2 Wins!");
-                        Console.WriteLine("Horizontal/");
-                        return true;
+                        if (player == positions[r + 1, c].value && // look up
+                            player == positions[r + 2, c].value &&
+                            player == positions[r + 3, c].value)
+                        {
+                            if (player == p.character) return true;
+                            else return false;
+                        }
+                        if (c + 3 < Global.colSize &&
+                            player == positions[r + 1, c + 1].value && // look up & right
+                            player == positions[r + 2, c + 2].value &&
+                            player == positions[r + 3, c + 3].value)
+                        {
+                            if (player == p.character) return true;
+                            else return false;
+                        }
+                        if (c - 3 >= 0 &&
+                            player == positions[r + 1, c - 1].value && // look up & left
+                            player == positions[r + 2, c - 2].value &&
+                            player == positions[r + 3, - 3].value)
+                        {
+                            if (player == p.character) return true;
+                            else return false;
+                        }
                     }
                 }
             }
             return false;
         }
+        int EvaluateFour(Position[] four, char ch) // DEBUG: This is wrong
+        {
+            // REVIEW: This needs to be fixed
+            int pos = 0;
+            int neg = 0;
+            for (int i = 0; i < Global.winNum; i++)
+            {
+                if (four[i].value == ch) pos++;
+                else if (!(four[i].value == ' ')) neg++;
+            }
+            int value = (pos * pos) - (neg * neg);
+            if (value == (1 * 1) - (3 * 3)) return value - 1000;
+            if (value == 4 * 4) return value + 1000;
+            return value;
+        }
         public int EvaluateBoard(Player p)
         {
-            // TODO: Evaluate the board for the player with p.character
-            return 0;
+            int value = 0;
+            for (int r = 0; r < Global.rowSize - 3; r++)
+            {
+                for (int c = 0; c < Global.colSize; c++)
+                {
+                    // Vertical
+                    value += EvaluateFour(new Position[4]
+                        {
+                            this.positions[r,c],
+                            this.positions[r+1,c],
+                            this.positions[r+2,c],
+                            this.positions[r+3,c]
+                        }, p.character);
+                    // Horizontal
+                    value += EvaluateFour(new Position[4]
+                        {
+                            this.positions[r,c],
+                            this.positions[r,c+1],
+                            this.positions[r,c+2],
+                            this.positions[r,c+3]
+                        }, p.character);
+                    // Diagonal \
+                    value += EvaluateFour(new Position[4]
+                        {
+                            this.positions[r,c],
+                            this.positions[r+1,c+1],
+                            this.positions[r+2,c+2],
+                            this.positions[r+3,c+3]
+                        }, p.character);
+                    if (r - 1 < 0 || c - 1 < 0) break;
+                    // Diagonal /
+                    value += EvaluateFour(new Position[4]
+                        {
+                            this.positions[r,c],
+                            this.positions[r-1,c-1],
+                            this.positions[r-2,c-2],
+                            this.positions[r-3,c-3]
+                        }, p.character);
+                }
+            }
+            return value; // Will return the value of the board
         }
         /// <summary>
         /// Plays int the current board the character at the column
@@ -255,15 +325,37 @@ namespace Connect4
             }
             return false; // Invalid (column full)
         }
+        public bool Play(char ch, int row, int col)
+        {
+            if (this.positions[row, col].value == ' ')
+            {
+                this.positions[row, col].value = ch;
+                return true;
+            }
+            return false;
+        }
         public ArrayList GetChildren(char ch)
         {
             ArrayList children = new ArrayList();
+            Board tempBoard = null;
             for (int col = 0; col < Global.colSize; col++)
             {
-                Board tempBoard = new Board(this);
+                tempBoard = null;
+                tempBoard = DeepClone<Board>(this);
                 if (tempBoard.Play(ch, col)) children.Add(tempBoard);
             }
             return children;
+        }
+        public static T DeepClone<T>(T obj)
+        {
+            using (var ms = new MemoryStream())
+            {
+                var formatter = new BinaryFormatter();
+                formatter.Serialize(ms, obj);
+                ms.Position = 0;
+
+                return (T)formatter.Deserialize(ms);
+            }
         }
         public void Reset()
         {
@@ -296,7 +388,7 @@ namespace Connect4
     {
         public Board board { get; set; } = new Board();
         public Player playerOne { get; set; } = new Player();
-        public Player playerTwo { get; set; } = new Player();
+        public AI playerTwo { get; set; } = new AI();
         public bool vsAi { get; set; } = false;
         public GameController()
         {
@@ -310,9 +402,17 @@ namespace Connect4
             while (!win)
             {
                 PlayerOneMove();
-                if (win = board.CheckWin(playerOne)) break;
+                if (board.CheckWin(playerOne))
+                {
+                    win = true;
+                    break;
+                }
                 PlayerTwoMove();
-                if (win = board.CheckWin(playerTwo)) break;
+                if (board.CheckWin(playerTwo))
+                {
+                    win = true;
+                    break;
+                }
             }
         }
         public void Reset()
@@ -343,7 +443,7 @@ namespace Connect4
             this.vsAi = true;
             playerTwo.name = "AI";
             Console.Write("AI Depth: ");
-            //this.playerTwo.depth = Global.GetNumberInput(); // TODO: Fix this
+            this.playerTwo.depth = Global.GetNumberInput(); // LET'S GO!!..THIS IS GROSS..
         }
         void WhoIsFirst()
         {
@@ -386,14 +486,19 @@ namespace Connect4
         {
             if (vsAi)
             {
-                // TODO: Ai movement
+                // TODO: AI Movement
+                // Set AI Board
+                this.playerTwo.aiBoard = this.board;
+                // Move
+                this.board.Play(this.playerTwo.character, this.playerTwo.AIMove());
+                // DEBUG: Broken and not working here
             }
             else
             {
                 while (!this.board.Play(this.playerTwo.character, this.playerTwo.Move()))
                     Console.WriteLine("Please choose another column");
-                PrintBoard();
             }
+            PrintBoard();
         }
         void PrintBoard()
         {
