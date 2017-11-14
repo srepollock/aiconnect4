@@ -248,64 +248,99 @@ namespace Connect4
             }
             return false;
         }
-        int EvaluateFour(Position[] four, char ch) // DEBUG: This is wrong
+        int FindStreak(char ch, int streak)
         {
-            // REVIEW: This needs to be fixed
-            int pos = 0;
-            int neg = 0;
-            for (int i = 0; i < Global.winNum; i++)
-            {
-                if (four[i].value == ch) pos++;
-                else if (!(four[i].value == ' ')) neg++;
-            }
-            int value = (pos * pos) - (neg * neg);
-            if (value == (1 * 1) - (3 * 3)) return value - 1000;
-            if (value == 4 * 4) return value + 1000;
-            return value;
-        }
-        public int EvaluateBoard(Player p)
-        {
-            int value = 0;
-            for (int r = 0; r < Global.rowSize - 3; r++)
+            int count = 0;
+            for (int r = 0; r < Global.rowSize; r++)
             {
                 for (int c = 0; c < Global.colSize; c++)
                 {
-                    // Vertical
-                    value += EvaluateFour(new Position[4]
-                        {
-                            this.positions[r,c],
-                            this.positions[r+1,c],
-                            this.positions[r+2,c],
-                            this.positions[r+3,c]
-                        }, p.character);
-                    // Horizontal
-                    value += EvaluateFour(new Position[4]
-                        {
-                            this.positions[r,c],
-                            this.positions[r,c+1],
-                            this.positions[r,c+2],
-                            this.positions[r,c+3]
-                        }, p.character);
-                    // Diagonal \
-                    value += EvaluateFour(new Position[4]
-                        {
-                            this.positions[r,c],
-                            this.positions[r+1,c+1],
-                            this.positions[r+2,c+2],
-                            this.positions[r+3,c+3]
-                        }, p.character);
-                    if (r - 1 < 0 || c - 1 < 0) break;
-                    // Diagonal /
-                    value += EvaluateFour(new Position[4]
-                        {
-                            this.positions[r,c],
-                            this.positions[r-1,c-1],
-                            this.positions[r-2,c-2],
-                            this.positions[r-3,c-3]
-                        }, p.character);
+                    if (positions[r, c].value == ch)
+                    {
+                        count += FindVerticalStreak(r, c, ch, streak);
+                        count += FindHorizontalStreak(r, c, ch, streak);
+                        count += FindDiagonalStreak(r, c, ch, streak);
+                    }
                 }
             }
-            return value; // Will return the value of the board
+            return count;
+        }
+        int FindVerticalStreak(int r, int c, char ch, int streak)
+        {
+            int consecutiveCount = 0;
+            if (r + streak - 1 < Global.rowSize)
+            {
+                for (int i = 0; i < streak; i++)
+                {
+                    if (positions[r, c].value == positions[r + i, c].value)
+                        consecutiveCount++;
+                    else break;
+                }
+            }
+            if (consecutiveCount == streak)
+                return 1;
+            else return 0;
+        }
+        int FindHorizontalStreak(int r, int c, char ch, int streak)
+        {
+            int consecutiveCount = 0;
+            if (c + streak - 1 < Global.colSize)
+            {
+                for (int i = 0; i < streak; i++)
+                {
+                    if (positions[r, c].value == positions[r, c + i].value)
+                        consecutiveCount++;
+                    else break;
+                }
+            }
+            if (consecutiveCount == streak)
+                return 1;
+            else return 0;
+        }
+        int FindDiagonalStreak(int r, int c, char ch, int streak)
+        {
+            int total = 0;
+            int consecutiveCount = 0;
+            if (r + streak - 1 < Global.rowSize && c + streak - 1 < Global.colSize)
+            {
+                for (int i = 0; i < streak; i++)
+                {
+                    if (positions[r, c].value == positions[r + i, c + i].value)
+                        consecutiveCount++;
+                    else break;
+                }
+            }
+            if (consecutiveCount == streak)
+                total++;
+            consecutiveCount = 0;
+            if (r - streak - 1 >= 0 && c + streak - 1 < Global.colSize)
+            {
+                for (int i = 0; i < streak; i++)
+                {
+                    if (positions[r, c].value == positions[r - i, c + i].value)
+                        consecutiveCount++;
+                    else break;
+                }
+            }
+            if (consecutiveCount == streak)
+                total++;
+            return total;
+        }
+        public int EvaluateBoard(Player p)
+        {
+            char oppChar;
+            if (p.character == Global.X) oppChar = Global.O;
+            else oppChar = Global.X;
+            int aiFours = FindStreak(p.character, 4);
+            int aiThrees = FindStreak(p.character, 3);
+            int aiTwos = FindStreak(p.character, 2);
+            int oppFours = FindStreak(oppChar, 4);
+            int oppThrees = FindStreak(oppChar, 3);
+            int oppTwos = FindStreak(oppChar, 2);
+            if (oppFours > 0)
+                return int.MinValue; // Lost
+            else
+                return (aiFours * 100000 + aiThrees * 100 + aiTwos * 10) - (oppThrees * 100 + oppTwos * 10);
         }
         /// <summary>
         /// Plays int the current board the character at the column
