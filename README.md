@@ -3,4 +3,4 @@ Minimax connect 4
 
 ## Running
 `./dotnet build`
-`./dotnet /bin/Debug/netcoreapp2.0/Connect4.dll`
+`./dotnet Connect4/bin/Debug/netcoreapp2.0/Connect4.dll`
