@@ -96,6 +96,7 @@ namespace Connect4
         public bool Win()
         {
             this.score++;
+            Console.WriteLine(name + " won!");
             return true;
         }
     }
@@ -440,12 +441,14 @@ namespace Connect4
                 if (board.CheckWin(playerOne))
                 {
                     win = true;
+                    playerOne.Win();
                     break;
                 }
                 PlayerTwoMove();
                 if (board.CheckWin(playerTwo))
                 {
                     win = true;
+                    playerTwo.Win();
                     break;
                 }
             }
