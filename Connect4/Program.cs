@@ -20,10 +20,7 @@ namespace Connect4
         }
         public static bool maxBool(ref int a, int b)
         {
-            if (a > b)
-            {
-                return true;
-            }
+            if (a > b) return true;
             return false;
         }
         public static int min(int a, int b)
@@ -120,18 +117,18 @@ namespace Connect4
         {
             int finalMove = 0;
             int bestValue = -int.MaxValue;
-            for (int c = 0; c < Global.colSize; c++)
+            for (int c = 0; c < Global.colSize; c++) // This loop does nothing?
             {
-                int minimaxvalue = Minimax(this.aiBoard, this.depth, true);
-                if (bestValue != Math.Max(bestValue, minimaxvalue))
+                int Minmaxvalue = Minmax(this.aiBoard, this.depth, true);
+                if (bestValue != Math.Max(bestValue, Minmaxvalue))
                 {
-                    bestValue = minimaxvalue;
+                    bestValue = Minmaxvalue;
                     finalMove = c; // BUG: This always reuturns the last column
                 }
             }
             return finalMove;
         }
-        int Minimax(Board node, int depth, bool maximizingPlayer)
+        int Minmax(Board node, int depth, bool maximizingPlayer)
         {
             int bestValue = 0;
             if (depth == 0)
@@ -141,7 +138,7 @@ namespace Connect4
                 bestValue = -int.MaxValue;
                 foreach (Board child in node.GetChildren(this.character)) // This is when the computer wants to move
                 {
-                    int tempV = Minimax(child, depth - 1, false);
+                    int tempV = Minmax(child, depth - 1, false);
                     bestValue = Global.max(bestValue, tempV);
                 }
                 return bestValue;
@@ -154,7 +151,7 @@ namespace Connect4
                 bestValue = int.MaxValue;
                 foreach (Board child in node.GetChildren(ch)) // This is when the player wants to move
                 {
-                    int tempV = Minimax(child, depth - 1, true);
+                    int tempV = Minmax(child, depth - 1, true);
                     bestValue = Global.min(bestValue, tempV);
                 }
                 return bestValue;
@@ -528,7 +525,8 @@ namespace Connect4
                 // Set AI Board
                 this.playerTwo.aiBoard = this.board;
                 // Move
-                this.board.Play(this.playerTwo.character, this.playerTwo.AIMove());
+                int aiMove = this.playerTwo.AIMove();
+                this.board.Play(this.playerTwo.character, aiMove);
                 // DEBUG: Broken and not working here
             }
             else
