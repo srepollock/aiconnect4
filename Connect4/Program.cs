@@ -115,15 +115,23 @@ namespace Connect4
         }
         public int AIMove()
         {
-            int finalMove = 0;
-            int bestValue = -int.MaxValue;
-            for (int c = 0; c < Global.colSize; c++) // This loop does nothing?
+            // return 0;
+            // return Minmax(this.aiBoard, this.depth, true); // BUG: Out of bounds
+            int finalMove = -1;
+            int bestValue = int.MaxValue;
+            int minMaxValue = 0;
+            Board tempBoard = null;
+            // make a temp board and run on that one
+            for (int c = 0; c < Global.colSize; c++)
             {
-                int Minmaxvalue = Minmax(this.aiBoard, this.depth, true);
-                if (bestValue != Math.Max(bestValue, Minmaxvalue))
+                minMaxValue = 0;
+                tempBoard = Board.DeepClone<Board>(this.aiBoard);
+                tempBoard.Play(this.character, c);
+                minMaxValue = Minmax(tempBoard, depth, true);
+                if (bestValue != Global.min(bestValue, minMaxValue))
                 {
-                    bestValue = Minmaxvalue;
-                    finalMove = c; // BUG: This always reuturns the last column
+                    bestValue = minMaxValue;
+                    finalMove = c;
                 }
             }
             return finalMove;
@@ -276,7 +284,7 @@ namespace Connect4
                 }
             }
             if (consecutiveCount == streak)
-                return 1;
+                return 10;
             else return 0;
         }
         int FindHorizontalStreak(int r, int c, char ch, int streak)
@@ -292,7 +300,7 @@ namespace Connect4
                 }
             }
             if (consecutiveCount == streak)
-                return 1;
+                return 10;
             else return 0;
         }
         int FindDiagonalStreak(int r, int c, char ch, int streak)
